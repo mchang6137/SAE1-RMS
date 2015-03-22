@@ -1,30 +1,34 @@
-abstract sig Actor{}
+abstract sig Actor{
+	allowedFollowers:set userID,
+	blockedFollowers: set userID,
+}
 
 //User Defined traits
 
 sig user extends Actor
 {
-	allowedFollowers:idArray,
-	blockedFollowers:idArray,
-	id: userID,
+	id: one userID,
 	//Friends should be a mutual agreement
-	friends: idArray
+	friends: set userID
 }
 
 //************************************************************************************************
 //Establish content on the basis of commentability
 
-abstract sig Content{}
+abstract sig Content{
+	privacySetting:Privacy,
+	creator: userID
+}
 
 abstract sig Commentable extends Content
 {
-	allcomments: commentArray
+	allcomments: set comment
 }
 
 sig Post extends Commentable
 {
 	text:String, 
-	photoLink: stringArray, 
+	photoLink: set String, 
 }
 
 sig Picture extends Commentable
@@ -47,7 +51,7 @@ sig personalData extends NonCommentable
 sig messages extends NonCommentable
 {
 	messageText: String,
-	photoLink: stringArray,
+	photoLink: set String,
 	//Remove sender? Is it necessary?
 	sender:userID,
 	receiver:userID
@@ -77,27 +81,29 @@ sig Circle extends personalLevel
 //************************************************************************************************
 
 sig group extends Actor
+{
+	adminstrators: set userID,
+	groupMembers:set userID
+}
+
+//***********************************************************************************************
+//Listing the constraints of the network
+
+fact check_uniqueID
+{
+	all disjoint u, u':user | u.id != u'.id
+}
+
+fact idSameUniverse
+{
+	all u: u' | u.id in u.allowedFollowers
+}
+
+
+//***********************************************************************************************
+sig userID
 {}
 
-sig userID
-{ idNumber: Int}
-
-
-
-sig idArray {
-length: Int,
-data: { i: Int | 0 <= i && i < length } -> lone userID
+pred show{
 }
-
-sig commentArray {
-length: Int,
-data: { i: Int | 0 <= i && i < length } -> lone comment
-}
-
-sig stringArray{
-length: Int,
-data: { i: Int | 0 <= i && i < length } -> lone String
-}
-
-pred show{}
-run show
+run show 
