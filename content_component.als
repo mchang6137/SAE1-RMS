@@ -21,55 +21,80 @@ abstract sig Content {
 
 abstract sig NonCommentable extends Content {}
 
+abstract sig Commentable extends Content {
+	comments: set MyString,
+	photoLink: lone MyString
+} {
+	// photo link and comments are different strings; check for none is required to allow for an empty photoLink
+	photoLink != none => photoLink not in comments
+	// visibility of all commentable content is given by circles
+	// TO DO: move and specify this once userIDs and groupIDs are available
+	privacySetting in (Circles + GroupLevel)
+}
+
+// groups also have PersonalData (e.g. group name)
 sig PersonalData extends NonCommentable {
 	data: MyString
+} {
+	// visibility is given by circles
+	// TO DO: move and specify this once userID and groupIDs are available
+	privacySetting in (Circles + GroupLevel)
 }
 
 sig Message extends NonCommentable {
 	text: MyString,
+	photoLink: lone MyString
 	//sender: ActorID
-}
-
-
-
-
-/*
-abstract sig Commentable extends Content {
-	comments: set String
+} {
+	// photo link and text are different strings; check for none is required to allow for an empty photoLink
+	photoLink != none => photoLink != text
+	// message is either visible to the reciever or public
+	privacySetting in (OneToOne + PPublic)
 }
 
 sig Photo extends Commentable {
-	photoLink: set String
-}
-*/
-
-/*
-abstract sig NonCommentable extends Content {}
-
-// a Photo content is modeled as a link to a picture
-sig Photo extends Commentable {
-	photoLink: String
+} {
+	// there has to be a photo link
+	one photoLink
 }
 
-// a post contains text and optionally link(s) to Photos
 sig Post extends Commentable {
-	text: String,
-	photoLink: set String
+	text: MyString,
+} {
+	// text and photo link are different strings; check for none is required to allow for an empty photoLink
+	photoLink != none => text !=photoLink
+	// text and comments are different strings
+	text not in comments
 }
 
-// each personal data is modeled as individual content
-sig PersonalData extends NonCommentable {
-	data: String
+
+// no string is shared
+fact {
+	// among objects of the same signature
+	all disj c1, c2: Commentable | ((c1.comments+c1.photoLink) & (c2.comments+c2.photoLink)) = none
+	all disj p1, p2: PersonalData | p1.data != p2.data
+	all disj m1, m2: Message | ((m1.text+m1.photoLink) & (m2.text+m2.photoLink)) = none
+	all disj p1, p2: Post | p1.text != p2.text && p1.text not in (p2.comments+p2.photoLink) && p2.text not in (p1.comments+p1.photoLink)
+	// among objects of different signatures
+	all d: PersonalData, m: Message | (d.data & (m.text+m.photoLink)) = none
+	all d: PersonalData, p: Photo | (d.data & (p.comments+p.photoLink)) = none
+	all d: PersonalData, p: Post | (d.data & (p.comments+p.photoLink+p.text)) = none
+	all m: Message, p: Photo | ((m.text+m.photoLink) & (p.comments+p.photoLink)) = none
+	all m: Message, p: Post | ((m.text+m.photoLink) & (p.comments+p.photoLink+p.text)) = none
+	all ph: Photo, po: Post | po.text not in (ph.comments+ph.photoLink) // rest is ensured above
+	all d: PersonalData, m: Message, p: Photo | (d.data & (m.text+m.photoLink) & (p.comments+p.photoLink)) = none
+	all d: PersonalData, m: Message, p: Post | (d.data & (m.text+m.photoLink) & (p.comments+p.photoLink+p.text)) = none
+	all d: PersonalData, ph: Photo, po: Post | (d.data & (ph.comments+ph.photoLink) & (po.comments+po.photoLink+po.text)) = none
+	all m: Message, ph: Photo, po: Post | ((m.text+m.photoLink) & (ph.comments+ph.photoLink) & (po.comments+po.photoLink+po.text)) = none
+	all d: PersonalData, m: Message, ph: Photo, po: Post | (d.data & (m.text+m.photoLink) & (ph.comments+ph.photoLink) & (po.comments+po.photoLink+po.text)) = none
 }
 
-// a message contains text
-sig Message extends NonCommentable {
-	text: String
-	//sender: ActorID
-	//receiver: ActorID
+// all strings are connected to content
+fact {
+	#MyString = #(Commentable.comments + Commentable.photoLink + PersonalData.data + Message.text + Message.photoLink + Post.text)
 }
-*/
+
 
 pred show {}
 
-run show
+run show for 10 Privacy, 8 MyString, exactly 3 Commentable, exactly 3 NonCommentable
