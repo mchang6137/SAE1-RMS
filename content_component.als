@@ -1,6 +1,3 @@
-// string class
-sig MyString {}
-
 // ************************************** PRIVACY SETTINGS *********************************** //
 abstract sig Privacy {}
 abstract sig PersonalLevel, GroupLevel extends Privacy {}
@@ -13,38 +10,46 @@ one sig GPublic, Group extends GroupLevel {}
 
 
 // ************************************** CONTENT ******************************************* //
+// string class (alloy's built in Strings suck)
+sig MyString {}
+
 // every content has a privacy setting and an owner
 abstract sig Content {
 	//owner: ActorID
 	privacySetting: Privacy
 }
 
+// superclass for personal data and messages (non commentable content)
 abstract sig NonCommentable extends Content {}
 
+// superclass for post, photo (commentable content)
 abstract sig Commentable extends Content {
 	comments: set MyString,
 	photoLink: lone MyString
 } {
-	// photo link and comments are different strings; check for none is required to allow for an empty photoLink
+	// photo link and comments are different strings
+	// check for none is required to allow for an empty set photoLink
 	photoLink != none => photoLink not in comments
 	// visibility of all commentable content is given by circles
 	// TO DO: move and specify this once userIDs and groupIDs are available
 	privacySetting in (Circles + GroupLevel)
 }
 
-// groups also have PersonalData (e.g. group name)
+
 sig PersonalData extends NonCommentable {
 	data: MyString
 } {
-	// visibility is given by circles
+	// also groups have personal data (e.g. group name)
 	// TO DO: move and specify this once userID and groupIDs are available
 	privacySetting in (Circles + GroupLevel)
 }
 
+
 sig Message extends NonCommentable {
 	text: MyString,
 	photoLink: lone MyString
-	//sender: ActorID
+	//receiver: UserID
+	// the sender of the message is given by owner
 } {
 	// photo link and text are different strings; check for none is required to allow for an empty photoLink
 	photoLink != none => photoLink != text
@@ -52,11 +57,14 @@ sig Message extends NonCommentable {
 	privacySetting in (OneToOne + PPublic)
 }
 
+
 sig Photo extends Commentable {
 } {
-	// there has to be a photo link
+	// we model a photo post to only contain the link to the photo (which is stored elsewhere)
+	// therefore, photoLink has to be non-empty
 	one photoLink
 }
+
 
 sig Post extends Commentable {
 	text: MyString,
@@ -96,5 +104,4 @@ fact {
 
 
 pred show {}
-
-run show for 10 Privacy, 8 MyString, exactly 3 Commentable, exactly 3 NonCommentable
+run show

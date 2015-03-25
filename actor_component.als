@@ -1,5 +1,7 @@
 // every actor of the social network is identified by a unique id
-sig ActorID {}
+// users and groups have different capabilities, therefore treat them separately
+abstract sig ActorID {}
+sig UserID, GroupID extends ActorID {}
 
 // social network is a set of interacting actors
 // there is only one single social network
@@ -9,32 +11,33 @@ one sig SocialNetwork {
 
 // ***************************** ACTORS **************************** //
 
-// every actor (user / group) has an id and a list of allowed and blocked followers
+// every actor (user / group) has a list of allowed and blocked followers
 abstract sig Actor {
-	id: ActorID,
-	allowedFollowers: set ActorID,
-	blockedFollowers: set ActorID,
+	allowedFollowers: set UserID,
+	blockedFollowers: set UserID,
 } {
-	// actor doesn't follow or block itself
-	id not in allowedFollowers && id not in blockedFollowers
 	// a follower is either allowed or blocked
-	no f: ActorID | f in allowedFollowers && f in blockedFollowers
+	no f: UserID | f in allowedFollowers && f in blockedFollowers
 }
 
 sig PersonalProfile extends Actor {
-	friends: set ActorID
+	id: UserID,
+	friends: set UserID
 } {
 	// user is not it's own friend
 	id not in friends
+	// user doesn't follow or block itself
+	id not in allowedFollowers && id not in blockedFollowers
 }
 
 sig GroupProfile extends Actor {
+	id: GroupID,
 	// every group has at least one group member and administrator
-	groupMembers: some ActorID,
-	administrators: some ActorID
+	groupMembers: some UserID,
+	administrators: some UserID
 } {
 	// administrator must be group member
-	no m: ActorID | m in administrators && m not in groupMembers
+	no m: UserID | m in administrators && m not in groupMembers
 }
 
 
@@ -42,12 +45,14 @@ sig GroupProfile extends Actor {
 
 // no id exists outside the social network
 fact {
-	no i: ActorID, s: SocialNetwork | i not in s.actors
+	no uid: UserID, s: SocialNetwork | uid not in s.actors
+	no gid: GroupID, s: SocialNetwork | gid not in s.actors
 }
 
 // IDs are unique
 fact {
-	all disj a1, a2: Actor | a1.id !=  a2.id
+	all disj p1, p2: PersonalProfile | p1.id !=  p2.id
+	all disj g1, g2: GroupProfile | g1.id != g2.id
 }
 
 // every actor in the social network is either a user or a group
@@ -60,21 +65,8 @@ fact {
 	all disj p1, p2: PersonalProfile | p1.id in p2.friends <=> p2.id in p1.friends
 }
 
-// groups have restricted functionality
-fact {
-	// groups cannot be friends
-	no g: GroupProfile, p: PersonalProfile | g.id in p.friends
-	// groups cannot follow users
-    no g: GroupProfile, p: PersonalProfile | g.id in p.allowedFollowers || g.id in p.blockedFollowers
-    // groups cannot follow groups
-    no g1, g2: GroupProfile | g1.id in g2.allowedFollowers || g1.id in g2.blockedFollowers
-	// groups cannot have membership or admin rights in groups
-	no g1, g2: GroupProfile | g1.id in g2.groupMembers || g1.id in g2.administrators
-}
-
 
 
 
 pred show{}
-
 run show
