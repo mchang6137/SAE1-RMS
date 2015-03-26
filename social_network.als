@@ -1,4 +1,3 @@
-// check that git push works
 // ************************************** SOCIAL NETWORK ******************************************* //
 
 // social network is a set of interacting actors
