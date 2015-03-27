@@ -1,5 +1,7 @@
 // ************************************** SOCIAL NETWORK ******************************************* //
 
+sig MyString {}
+
 // social network is a set of interacting actors
 // there is only one single social network
 one sig SocialNetwork {
@@ -8,34 +10,33 @@ one sig SocialNetwork {
 
 // ************************************** ACTORS ******************************************* //
 
-abstract some sig Actor {
+abstract sig Actor {
 	id: one ID,
 	contents: set Content
 }
 
-some sig User extends Actor {
+sig User extends Actor {
 	friends: some User,
 	follow: set Actor,
 	block: set User,
 	newsfeed: set Content
 }
 
-some sig Group extends Actor {
+sig Group extends Actor {
 	members: some User,
 	admins: some User
 }
 
-sig ID {
+sig ID {}
+
+fact one_social_network {
+	// all actors belong to the same social network
+	all s: SocialNetwork | s.actors = Actor
 }
 
 fact unique_id {
 	// ids are unique
 	all disjoint a1, a2: Actor | a1.id != a2.id
-}
-
-fact one_social_network {
-	// all actors belong to the same social network
-	all s: SocialNetwork | s.actors = Actor
 }
 
 fact friends {
@@ -44,7 +45,7 @@ fact friends {
 }
 
 fact not_in_own_lists {
-	// actor doesn't follow or block itself, and is not his own friend
+	// user doesn't follow or block itself, and is not his own friend
 	all u: User | u not in u.friends and u not in u.follow and u not in u.block
 }
 
@@ -60,7 +61,7 @@ fact group_members_not_follow {
 
 // ************************************** CONTENT ******************************************* //
 
-abstract some sig Content {
+abstract sig Content {
 	sender: one Actor,
 	privacy: one Privacy,
 	viewers: set User,
@@ -71,12 +72,12 @@ abstract sig NonCommentable extends Content {}
 
 // groups also have PersonalData (e.g. group name)
 sig PersonalData extends NonCommentable {
-	type: String, // e.g. "Name"
-	data: String // e.g. "Rik"
+	type: one MyString, // e.g. "Name"
+	data: one MyString // e.g. "Rik"
 }
 
 sig Message extends NonCommentable {
-	text: String,
+	text: one MyString,
 	photos: set Photo,
 	receiver: one User
 }
@@ -86,15 +87,15 @@ abstract sig Commentable extends Content {
 }
 
 sig Post extends Commentable {
-	text: String,
+	text: MyString,
 	photos: set Photo
 }
 
 sig Photo extends Commentable {}
 
 sig Comment extends Commentable {
-	text: String,
-	comment_on: Commentable
+	text: one MyString,
+	comment_on: one Commentable
 }
 
 fact receiver_sender {
@@ -102,9 +103,30 @@ fact receiver_sender {
 	all m: Message | m.sender != m.receiver
 }
 
-fact no_comment_itself {
-	// no recursive comments
-	all c: Comment | c != c.comment_on
+fact no_group_messages {
+	// groups can't send messages
+	all m: Message | m.sender in User
+}
+
+fact acyclic_comments {
+	// no cyclic comments
+	no c: Comment | c in c.^comment_on
+}
+
+fact personal_data_type_unique {
+	// the type of personal data is unique for a user. e.g.  one user cannot have 2 names or 2 birthdays
+	all u: User, disjoint p1, p2: u.contents & PersonalData | p1.type != p2.type
+}
+
+fact photos_in_post_or_message { 
+	// each photo in a post or message is visible at least to all the people that can view the post or message
+	all p: Post, photo: p.photos | p.viewers in photo.viewers
+	all m: Message, photo: m.photos | m.viewers in photo.viewers
+}
+
+// each comment on a content is visible to the people that can view the content
+fact comments {
+	//all c: Comment | c.viewers = c.viewers
 }
 
 // ************************************** PRIVACY ******************************************* //
@@ -118,13 +140,13 @@ enum Privacy { Pri, Fri, FoF, Tra, Pub }
 fact viewers {
 	// privacy rules for content sent by users
 	all c: Content, s: (c.sender & User) {c.viewers =
-		{ u:s | c.privacy in Pri} 
-		+ { u: s.friends | c.privacy in Fri} 
+		s
+		+ { u: s.friends | c.privacy in (Fri + FoF)} 
 		+ { u: s.friends.friends | c.privacy in FoF}
-		+ { u: s.*friends | c.privacy in Tra}
+		+ { u: s.^friends | c.privacy in Tra}
 		+ { u: User | c.privacy in Pub}
-		- s.block
 		+ {m: c.receiver | c in Message}
+		- s.block
 	}
 	// privacy rules for content sent by groups
 	all c: Content, s: (c.sender & Group) {c.viewers = 
@@ -158,6 +180,119 @@ fact modifiers {
 	all c: Content, s: (c.sender & Group) | c.modifiers = s.admins
 }
 
-pred show {}
+// ************************************** TASK C ******************************************* //
 
-run show
+// holds iff the given user can see the given content
+pred canSee[user: User, content: Content] {
+	user in content.viewers
+}
+
+// holds iff the given user is allowed to modify the given content
+pred canModify[user: User, content: Content] {
+	user in content.modifiers
+}
+
+// holds iff the user should see the content on his newsfeed
+pred isOnNewsFeed[user: User, content: Content] {
+	content in user.newsfeed
+}
+
+// ************************************** TASK D ******************************************* //
+
+// 1. Comment chains are acyclic
+assert d1 { no c: Comment | c in c.^comment_on }
+
+// 2. A user can modify only content they can see
+assert d2 { all u: User, c: Content | canModify[u, c] => canSee[u, c] }
+
+// 3. A user can modify all the content they have created
+assert d3 { all u: User, c: u.contents | u in c.modifiers }
+
+// 4. If a post or message includes photos, the photos are visible at least to all the people that can view the post
+assert d4 { all p: Post, photo: p.photos |  p.viewers in photo.viewers}
+assert d4' { all m: Message, photo: m.photos | m.viewers in photo.viewers  }
+// this is syntactically wrong apparently:
+// assert d4 { all c: Post + Message, photo: c.photos | photo.viewers in c.viewers }
+// ?????? is it possible in one assert
+
+// 5. Each group has members
+assert d5 { all g: Group | some g.members }
+
+// 6. A user’s newsfeed only has content visible to her
+assert d6 { all u: User, c: u.newsfeed | canSee[u, c] }
+
+// 7. A user cannot see any content created by a user that blocks them
+assert d7 { all u: User, u': u.block, c: u.contents | not canSee[u', c] }
+assert d7' { all u: User, u': u.block, c: u.contents - Message | not canSee[u', c] }
+// ???? When a user u sends a message to a receiver u' who is blocked by u, can u' see the message?
+// Dependent on the answer on this question, we have to switch the order of
+// "+ {m: c.receiver | c in Message}" and "- s.block" in  the fact viewers
+// and take d7' instead of d7
+
+
+// ************************************** TASK E ******************************************* //
+
+// 1. A comment chain that is 5 comments long
+// ????? I don't really know what they mean: 5 comments on a Commentable Content (impl e1 or e1'
+// or a comment on a comment on a comment on a comment on a comment (e1'')
+pred e1 {
+	#Comment = 5
+	some c: Comment | c.*comment_on & Comment = Comment
+}
+// run e1 for 6
+pred e1' {
+	some c1,c2: Comment | c1.comment_on.comment_on.comment_on.comment_on = c2
+}
+// run e1' for 6
+pred e1'' {
+	some c: Commentable | #{ comment: Comment | comment.comment_on = c } = 5
+}
+run e1'' for 6
+
+// 2. 3 users that form 7 different groups, each with a different set of members
+pred e2 {
+	#Group = 7
+	#User = 3
+	all disjoint g, g': Group | g.members != g'.members
+}
+// run e2 for 10
+
+// 3. 4 users, where each has at least one friend, but not everyone is a transitive friend of everyone else
+pred e3 {
+	#User = 4
+	all u: User | some u.friends
+	some u: User | u.*friends != User
+}
+// run e3 for 4
+
+// 4. A user that can see a post of a user that is a friend of friend (but not a direct friend), 
+//     which has privacy level “friend of friend” and includes a photo from a fourth user
+pred e4[post: Post, s: (post.sender & User), u1: post.viewers, photo: Photo, u2: User - s - u1] {
+	u1 in (s.friends.friends - s.friends - s)
+	post.privacy = FoF
+	photo in post.photos
+	u2 = photo.sender
+}
+// run e4
+
+// 5. A post that includes a photo created not by the poster, where the photo is not public
+// ?????? Do senders have to be users, or can they also be groups?
+pred e5[post: Post, photo: post.photos] {
+	post.sender != photo.sender
+	photo.privacy not in Pub
+}
+// run e5
+
+// 6. A post with the privacy level “friends of friends”, which includes a photo created by a friend of the creator of the post. 
+//     Some friend of the creator of the post must be able to see the post, but not the photo
+pred e6[post: Post, photo: post.photos, u: post.sender.friends] {
+	post.privacy in FoF
+	photo.sender in post.sender.friends
+	u in post.viewers - photo.viewers
+}
+// run e6 for 10 -> No Instance found
+// This is infeasible, it is in contradiction with property D4
+
+pred show {}
+run show for exactly 4 ID, exactly 2 Group, exactly 2 User, exactly 2 Message, 
+	exactly 1 PersonalData, exactly 2 Comment, exactly 2 Photo, exactly 2 Post, exactly 2 MyString
