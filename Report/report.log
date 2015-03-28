@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013) (format=pdflatex 2013.10.13)  28 MAR 2015 23:01
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013) (format=pdflatex 2013.10.13)  28 MAR 2015 23:07
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -307,10 +307,10 @@ Package pdftex.def Info: e5.png used on input line 91.
  [7 <./e5.png (PNG copy)>]
 (./report.aux) ) 
 Here is how much of TeX's memory you used:
- 2593 strings out of 493315
- 40041 string characters out of 6137903
+ 2594 strings out of 493315
+ 40049 string characters out of 6137903
  123454 words of memory out of 5000000
- 6032 multiletter control sequences out of 15000+600000
+ 6033 multiletter control sequences out of 15000+600000
  7479 words of font info for 27 fonts, out of 8000000 for 9000
  957 hyphenation exceptions out of 8191
  46i,7n,56p,719b,271s stack positions out of 5000i,500n,10000p,200000b,80000s
@@ -322,7 +322,7 @@ mssbx10.pfb></usr/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/
 cmsy10.pfb></usr/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/c
 mti12.pfb></usr/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cm
 tt12.pfb>
-Output written on report.pdf (7 pages, 374923 bytes).
+Output written on report.pdf (7 pages, 374852 bytes).
 PDF statistics:
  66 PDF objects out of 1000 (max. 8388607)
  40 compressed objects within 1 object stream
