@@ -255,7 +255,6 @@ pred e4[post: Post, s:post.sender & User, m: s.friends, v: post.viewers + m.frie
 // run e4 for 4
 
 // 5. A post that includes a photo created not by the poster, where the photo is not public
-// ?????? Do senders have to be users, or can they also be groups?
 pred e5[post: Post, photo: post.photos] {
 	post.sender != photo.sender
 	post.sender in User
