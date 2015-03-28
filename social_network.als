@@ -124,9 +124,9 @@ fact photos_in_post_or_message {
 	all m: Message, photo: m.photos | m.viewers in photo.viewers
 }
 
-// each comment on a content is visible to the people that can view the content
-fact comments {
-	//all c: Comment | c.viewers = c.viewers
+fact comments_viewers {
+	// each comment on a commentable content is visible at least to all the people that can view the content
+	all comment: Comment, content: comment.comment_on | content.viewers in comment.viewers
 }
 
 // ************************************** PRIVACY ******************************************* //
@@ -209,11 +209,8 @@ assert d2 { all u: User, c: Content | canModify[u, c] => canSee[u, c] }
 assert d3 { all u: User, c: u.contents | u in c.modifiers }
 
 // 4. If a post or message includes photos, the photos are visible at least to all the people that can view the post
-assert d4 { all p: Post, photo: p.photos |  p.viewers in photo.viewers}
+assert d4 { all p: Post, photo: p.photos |  p.viewers in photo.viewers }
 assert d4' { all m: Message, photo: m.photos | m.viewers in photo.viewers  }
-// this is syntactically wrong apparently:
-// assert d4 { all c: Post + Message, photo: c.photos | photo.viewers in c.viewers }
-// ?????? is it possible in one assert
 
 // 5. Each group has members
 assert d5 { all g: Group | some g.members }
@@ -223,31 +220,15 @@ assert d6 { all u: User, c: u.newsfeed | canSee[u, c] }
 
 // 7. A user cannot see any content created by a user that blocks them
 assert d7 { all u: User, u': u.block, c: u.contents | not canSee[u', c] }
-assert d7' { all u: User, u': u.block, c: u.contents - Message | not canSee[u', c] }
-// ???? When a user u sends a message to a receiver u' who is blocked by u, can u' see the message?
-// Dependent on the answer on this question, we have to switch the order of
-// "+ {m: c.receiver | c in Message}" and "- s.block" in  the fact viewers
-// and take d7' instead of d7
 
 
 // ************************************** TASK E ******************************************* //
 
 // 1. A comment chain that is 5 comments long
-// ????? I don't really know what they mean: 5 comments on a Commentable Content (impl e1 or e1'
-// or a comment on a comment on a comment on a comment on a comment (e1'')
 pred e1 {
-	#Comment = 5
-	some c: Comment | c.*comment_on & Comment = Comment
-}
-// run e1 for 6
-pred e1' {
 	some c1,c2: Comment | c1.comment_on.comment_on.comment_on.comment_on = c2
 }
-// run e1' for 6
-pred e1'' {
-	some c: Commentable | #{ comment: Comment | comment.comment_on = c } = 5
-}
-run e1'' for 6
+// run e1 for 6
 
 // 2. 3 users that form 7 different groups, each with a different set of members
 pred e2 {
@@ -267,18 +248,18 @@ pred e3 {
 
 // 4. A user that can see a post of a user that is a friend of friend (but not a direct friend), 
 //     which has privacy level “friend of friend” and includes a photo from a fourth user
-pred e4[post: Post, s: (post.sender & User), u1: post.viewers, photo: Photo, u2: User - s - u1] {
-	u1 in (s.friends.friends - s.friends - s)
+pred e4[post: Post, s:post.sender & User, m: s.friends, v: post.viewers + m.friends - s.friends - s, photo: Photo, u4: (photo.sender - s - m - v) & User] {
 	post.privacy = FoF
 	photo in post.photos
-	u2 = photo.sender
 }
-// run e4
+// run e4 for 4
 
 // 5. A post that includes a photo created not by the poster, where the photo is not public
 // ?????? Do senders have to be users, or can they also be groups?
 pred e5[post: Post, photo: post.photos] {
 	post.sender != photo.sender
+	post.sender in User
+	photo.sender in User
 	photo.privacy not in Pub
 }
 // run e5
@@ -290,9 +271,9 @@ pred e6[post: Post, photo: post.photos, u: post.sender.friends] {
 	photo.sender in post.sender.friends
 	u in post.viewers - photo.viewers
 }
-// run e6 for 10 -> No Instance found
+// run e6 for 10 //-> No Instance found
 // This is infeasible, it is in contradiction with property D4
 
 pred show {}
-run show for exactly 4 ID, exactly 2 Group, exactly 2 User, exactly 2 Message, 
-	exactly 1 PersonalData, exactly 2 Comment, exactly 2 Photo, exactly 2 Post, exactly 2 MyString
+run show for exactly 4 ID, exactly 2 Group, exactly 2 User, exactly 1 Message, 
+	exactly 1 PersonalData, exactly 1 Comment, exactly 1 Photo, exactly 1 Post, exactly 2 MyString

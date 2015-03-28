@@ -1,0 +1,127 @@
+% Use this template to write your solutions
+
+\documentstyle[12pt]{article}
+
+% Set the margins
+%
+\setlength{\textheight}{8.5in}
+\setlength{\headheight}{.25in}
+\setlength{\headsep}{.25in}
+\setlength{\topmargin}{0in}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+
+% Macros
+\newcommand{\myN}{\hbox{N\hspace*{-.9em}I\hspace*{.4em}}}
+\newcommand{\myZ}{\hbox{Z}^+}
+\newcommand{\myR}{\hbox{R}}
+
+\newcommand{\myfunction}[3]
+{${#1} : {#2} \rightarrow {#3}$ }
+
+\newcommand{\myzrfunction}[1]
+{\myfunction{#1}{{\myZ}}{{\myR}}}
+
+
+% Formating Macros
+
+\newcommand{\myheader}[4]
+{\vspace*{-0.5in}
+\noindent
+{#1} \hfill {#3}
+
+\noindent
+{#2} \hfill {#4}
+
+\noindent
+\rule[8pt]{\textwidth}{1pt}
+
+\vspace{1ex} 
+}  % end \myheader 
+
+\newcommand{\myalgsheader}[0]
+{\myheader
+{ {\bf{Software Architecture and Engineering}} }
+{ {\bf{Spring 2015 -- 3/28/15}} }
+
+}
+
+% Running head (goes at top of each page, beginning with page 2.
+% Must precede by \pagestyle{myheadings}.
+\newcommand{\myrunninghead}[2]
+{\markright{{\it {#1}, {#2}}}}
+
+\newcommand{\myrunningalgshead}[2]
+{\myrunninghead{COS 340 }{{#1}}}
+
+\newcommand{\myrunninghwhead}[2]
+{\myrunningalgshead{SAE Assignment 1}}
+
+\newcommand{\mytitle}[1]
+{\begin{center}
+{\large {\bf {#1}}}
+\end{center}}
+
+\newcommand{\myhwtitle}[3]
+{\begin{center}
+{\large {\bf SAE Assignment 1: Social Network Modelling}}\\
+\medskip 
+{\it {Groupname: RMS -- Michael Alan Chang, Rik Melis, Simon T{\H o}dtli}} % Name goes here
+\end{center}}
+
+\newcommand{\mysection}[1]
+{\noindent {\bf {#1}}}
+
+%%%%%% Begin document with header and title %%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\myalgsheader
+
+\pagestyle{plain}
+
+\myhwtitle{x}{y}{your ID, your last name, your first name}
+% Example : \myhwtitle{1}{4}{Your name here}
+
+\bigskip
+
+{\bf General Explanation of Design Decisions:}
+\begin{itemize}
+	\item The type of the personal data cannot be repeated in a single profile. For example, a single user cannot have two birthdates or two home addresses.
+	\item Groups and individual users utilize the same privacy circle classes. For individual users, the privacy settings are used exactly as they are described in the project specifications. For the groups, if some content is public, then all users of the socianl network can view the content (unless they are blocked) . On the other hand, all of the other four privacy settings -- Friends, friends of friends, transitive friends, and private -- are interpreted as private to the members of the group.
+	\item We addresed privacy settings as generally as possible. In Part D4, it is stated that `If a post or message includes photos, the photos are visible at least to all the people that can view the post'. Our privacy rules strictly follow this statement, and we further extend this statement to comments. This is described by the following statement: `If a post or message is commented on, the comments are visible at least to all the people that can view the content that is being commented on'
+	\item If user A is blocked by user B, user A cannot receive even a private message from User B. This is reinforced by the assertion made in D7.
+\end{itemize}
+
+{\bf A list of details from the project description that cannot be expressed in the UML model}
+\begin{itemize}
+  \item A friendship arrangement is always mutual
+  \item If you follow an actor and their content is visible to you (i.e. not blocked), then that content is presented on your newsfeed.
+  \item If user A has blocked user B, then user B cannot see any of the content posted by user A.
+  \item Specifically for messages, we add the recipient of the message to the privacy circles that the message is made available for.  For example, for 1-to-1 private message, the privacy circle would be `private', and the recipient of the message would be added to the private set.
+  \item Privacy circle settings are implemented as is described in the assignment specifications.
+  \item The ID signature encapsulates all the information required to identify the user, whether is a username, an email address, etc.
+  \item Adminstrators of a group must also be a member of the group.
+  \item On a user by user basis, the modifier of posted content is always the sender of a content. For a group, the modifiers of content are only administrators of the group.
+  \item The process (dynamic) of adding people to a group can only be done by adminstrators.
+  \item For the content of the group, the privacy settings are restricted to private and public. In other words, the content is either open to only the group members or to everyone un the social network universe.
+\end{itemize}
+
+
+{\bf A list of properties from Task D that you were not able to check, each with a short explanation why the property does not hold }
+\begin{itemize}
+  \item There were no properties that we were not able to verify.
+\end{itemize}
+
+{\bf A list of instances from Task E that you were not able to produce, each with a short explanation why the instance is not feasible } 
+
+\begin{itemize}
+  \item Part 6 is not feasible as it is in direct contradiction from the assertion made in part D4. To reiterate, part D4 states that a picture will inherit the privacy setting of the post if the picture has a more private setting than the post itself. In this regard, it is impossible to have a scenario where someone can view a post but not the photo as is described in part E6.
+
+\end{itemize}
+
+{\bf Diagrams of all the generated instances from Task E}
+
+\end{document}
+
